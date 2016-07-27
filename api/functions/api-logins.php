@@ -121,7 +121,163 @@ function register($endpoint,$action,$passedObject)
 	return $resultArr;
 
 }
+function forgot_pass($endpoint,$action,$passedObject)
+{  
+	$resultArr=array();
+	
+	$email = trim($passedObject['email']); 
+    $fturi = trim($passedObject['reseturi']);
+	$crdatetime = date('Y-m-d H:i:s');
+    
+	$forgotArr=db_fetch('we_users','`email`=\''.$email.'\' ');
+	if(count($forgotArr) > 0)
+	{
+	    
+        $reset_token=md5($forgotArr[0]['id'].time());	
+        
+        //---- SENd EMAIL HERE -----
+		//Send email with new pass
+		$from_email='support@crescente.com';
+		$from_name='crescente Password Reset Service';
+		$to=$forgotArr[0]['email'];
+	
+		$subject='Your reset Password Link';
 
+		$message_body='
+			<center><h1 style="font-size:3.5em; font-family: \'Helvetica Neue\',Helvetica, Arial,sans-serif; font-weight:100">
+			     Welcome to our title quote app
+			</h1></center>			
+		 	<p style="font-size:16px">
+		   		Hi '.$users[0]['fname'].',
+		    </p>
+		 	<p style="font-size:16px">
+		   		We\'ve just reset your password, as per your request. Below you\'ll find your new login credentials. We advise you to change your password when you login, to a password of your choice.
+		    </p>
+		 	<p style="font-size:16px">
+		   		<b>Your Reset Password Link:</b><br />
+				<a href="'.$fturi.'&reset='.$reset_token.'">Click Here To Reset Your Password</a>
+		    </p>
+			 <br />
+			';
+
+			$signature='';
+
+		include('libs/email_template.php');
+		$message= wordwrap($message, 50);
+
+	
+		$response = send_mail($from_email,$from_name,$to,$subject,$message);
+        
+        //--- ADD TOKEN IN DB FOR RESET PASSWORD-----
+		$add_token=db_add('we_tokens',array(
+			'`tktype`'  => 'reset',
+            '`token`' => $reset_token,
+			'`time`' => $crdatetime,
+			'`login_id`' => $forgotArr[0]['id']
+			
+		));
+        if($response==1)
+        {
+        $resultArr['event']['type']="success";
+		$resultArr['event']['message']="Password Reset Link Sent Successfully to Your Email Id";
+		$resultArr['forgotinfo']=$passedObject;    
+        }
+        else
+        {
+        $resultArr['event']['type']="fail";
+		$resultArr['event']['message']="Password Reset Link Not Sent";
+		$resultArr['forgotinfo']='null';    
+        }
+				
+        
+	}
+	else
+	{
+		$resultArr['event']['type']="fail";
+		$resultArr['event']['message']="User Details Not Found";
+		$resultArr['user']=null;
+	}
+	
+	$resultArr=json_encode($resultArr,JSON_NUMERIC_CHECK);
+	return $resultArr;
+
+}
+
+function reset_pass($endpoint,$action,$passedObject)
+{  
+	$resultArr=array();
+	
+	$newpassword = trim($passedObject['newpassword']); 
+    $resettoken  = trim($passedObject['resettoken']);
+	
+    
+	$resetArr=db_fetch('we_tokens','`token`=\''.$resettoken.'\' ');
+	if(count($resetArr) > 0)
+	{
+	    
+        $loginid = $resetArr[0]['login_id'];
+        
+        $userArr=db_fetch('we_users','`id`=\''.$loginid.'\' ');
+        
+        $update = db_update('we_users',array('`password`' => md5($newpassword)),'`id` = '.$loginid);
+        
+        //---- SENd EMAIL HERE -----
+		//Send email with new pass
+		$from_email='support@crescente.com';
+		$from_name='crescente Password Reset Service';
+		$to=$userArr[0]['email'];
+	
+		$subject='Password Reset Successfully';
+
+		$message_body='
+			<center><h1 style="font-size:3.5em; font-family: \'Helvetica Neue\',Helvetica, Arial,sans-serif; font-weight:100">
+			     Resident Wellness Portal
+			</h1></center>			
+		 	<p style="font-size:16px">
+		   		Hi '.$userArr[0]['fname'].',
+		    </p>
+		 	<p style="font-size:16px">
+		   		Your Password Reset Successfully.Now Login with your new password.
+		    </p>
+			 <br />
+			';
+
+			$signature='';
+
+		include('libs/email_template.php');
+		$message= wordwrap($message, 50);
+
+	
+		$response = send_mail($from_email,$from_name,$to,$subject,$message);
+        
+        //--- ADD TOKEN IN DB FOR RESET PASSWORD-----
+		$add_token=db_delete('we_tokens'," `login_id`=".$loginid." AND `tktype`='reset'");
+        if($response==1)
+        {
+        $resultArr['event']['type']="success";
+		$resultArr['event']['message']="Password Reset Done";
+		$resultArr['resetinfo']='1';    
+        }
+        else
+        {
+        $resultArr['event']['type']="fail";
+		$resultArr['event']['message']="Password Reset Failed";
+		$resultArr['resetinfo']=null;    
+        }
+				
+        
+	}
+	else
+	{
+		$resultArr['event']['type']="fail";
+		$resultArr['event']['message']="Invalid Reset Token";
+		$resultArr['resetinfo']=null;
+	}
+	
+	$resultArr=json_encode($resultArr,JSON_NUMERIC_CHECK);
+	return $resultArr;
+
+}
 function auth_user($endpoint,$action,$passedObject)
 {
 

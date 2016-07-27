@@ -1,10 +1,37 @@
 <?php
 ini_set('display_errors', 0);
 error_reporting(E_ERROR | E_WARNING | E_PARSE); 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 
-//ini_set('display_errors', '1');
+if(isset($_GET['code'])) {
+    // try to get an access token
+    $code = $_GET['code'];
+    $url = 'https://accounts.google.com/o/oauth2/token';
+    $params = array(
+        "code" => $code,
+        "client_id" => "468393552680-4cmruubnffntgee6f4dbbohmdcjj74hl.apps.googleusercontent.com",
+        "client_secret" => "PCcftpkjt34ZOXmUp7zKVKmm",
+        "redirect_uri" => "http://www.wellness.dev/api/well.php",
+        "grant_type" => "authorization_code"
+    );
+    
+    
+            
+    $ch = curl_init($url); 
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $params);                                                                  
+    curl_setopt($ch, CURLOPT_HEADER, TRUE); 
+    curl_setopt($ch, CURLOPT_NOBODY, TRUE); // remove body 
+    $head = curl_exec($ch); 
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
+    curl_close($ch); 
+    
+    
+    var_dump($head);
+    $responseObj = json_decode($head);
+    echo "Access token: " . $responseObj->access_token;
+    
+}
+
+
 require_once ('libs/db-tools.php');
 
 //--- include api files ----
@@ -12,6 +39,7 @@ require_once ('functions/api-logins.php');
 require_once ('functions/api-users.php');
 require_once ('functions/api-lists.php');
 require_once ('functions/api-asmt.php');
+require_once ('functions/api-notification.php');
 
 $db1=array('host'=>'localhost','user'=>'root','pass'=>'','db'=>'cre_wellness');
 
@@ -128,7 +156,10 @@ function rest_post($endpoint,$action,$passedObject)
                     
                     case 'login'     : $resultArr=auth_user($endpoint,$action,$passedObject['login']);
 						break;
-					
+                    case 'forgotpass': $resultArr=forgot_pass($endpoint,$action,$passedObject['forgotinfo']);
+						break;
+                    case 'resetpass' : $resultArr=reset_pass($endpoint,$action,$passedObject['resetinfo']);
+						break; 
 				}
 				break;
        case 'lists':
@@ -147,10 +178,6 @@ function rest_post($endpoint,$action,$passedObject)
 						break;
                     case 'updateavatar' : $resultArr=upload_file($endpoint,$action,$passedObject['fileinfo']);
 						break;
-                    case 'forgotpass'   : $resultArr=forgot_pass($endpoint,$action,$passedObject['forgotinfo']);
-						break;
-                    case 'resetpass'    : $resultArr=reset_pass($endpoint,$action,$passedObject['resetinfo']);
-						break; 
                     case 'getuserlist' : $resultArr=get_userlist($endpoint,$action,$passedObject['userlistinfo']);
 						break;      
 				}
@@ -171,18 +198,31 @@ function rest_post($endpoint,$action,$passedObject)
                     
                     
                     //assesment add edit delete
-                    case 'asmtadd'   : $resultArr=create_asmt($endpoint,$action,$passedObject['asmtinfo']); // create types of assesment we_asntype
+                    case 'asmtadd'     : $resultArr=create_asmt($endpoint,$action,$passedObject['asmtinfo']); // create types of assesment we_asntype
 						break;
-                    case 'asmtupdate': $resultArr=update_asmt($endpoint,$action,$passedObject['asmtinfo']); // update types of assesment we_asntype
+                    case 'asmtupdate'  : $resultArr=update_asmt($endpoint,$action,$passedObject['asmtinfo']); // update types of assesment we_asntype
 						break;
-                    case 'asmtdelete': $resultArr=delete_asmt($endpoint,$action,$passedObject['asmtinfo']); // delete types of assesment we_asntype
+                    case 'asmtdelete'  : $resultArr=delete_asmt($endpoint,$action,$passedObject['asmtinfo']); // delete types of assesment we_asntype
 						break;
                     
                     //assesment list userwise
                     case 'userasmtlist': $resultArr=get_asmt_userwise($endpoint,$action,$passedObject['userasmtinfo']); // delete types of assesment we_asntype
 						break;
-                    case 'singleasmt': $resultArr=get_asmt_row($endpoint,$action,$passedObject['singleasmtinfo']); // delete types of assesment we_asntype
+                    case 'singleasmt'  : $resultArr=get_asmt_row($endpoint,$action,$passedObject['singleasmtinfo']); // delete types of assesment we_asntype
 						break;    
+                    case 'asmtapprove' : $resultArr=get_asmt_approve($endpoint,$action,$passedObject['approveinfo']); // delete types of assesment we_asntype
+						break;    
+                }
+                break;
+      
+      //mail notification system
+      case 'notification':
+                switch($action)
+				{
+				    //
+					case 'notification'   : $resultArr=Notification($endpoint,$action,$passedObject['notifyinfo']); // create types of assesment we_asntype
+						break;
+                        
                 }
                 break;
         

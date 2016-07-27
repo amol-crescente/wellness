@@ -4,6 +4,41 @@
 
 $option=$_GET["option"];  
 
+$url = "https://accounts.google.com/o/oauth2/auth";
+    
+$params = array(
+    "response_type" => "code",
+    "client_id" => "468393552680-4cmruubnffntgee6f4dbbohmdcjj74hl.apps.googleusercontent.com",
+    "redirect_uri" => "http://www.wellness.dev/api/well.php",
+    "scope" => "https://www.googleapis.com/auth/plus.me"
+    );
+
+$request_to = $url . '?' . http_build_query($params);
+
+header("Location: " . $request_to);
+
+
+if(isset($_GET['code'])) {
+    // try to get an access token
+    $code = $_GET['code'];
+    $url = 'https://accounts.google.com/o/oauth2/token';
+    $params = array(
+        "code" => $code,
+        "client_id" => "468393552680-4cmruubnffntgee6f4dbbohmdcjj74hl.apps.googleusercontent.com",
+        "client_secret" => "PCcftpkjt34ZOXmUp7zKVKmm",
+        "redirect_uri" => "http://www.wellness.dev/api/well.php",
+        "grant_type" => "authorization_code"
+    );
+
+    $request = new HttpRequest($url, HttpRequest::METH_POST);
+    $request->setPostFields($params);
+    $request->send();
+    $responseObj = json_decode($request->getResponseBody());
+    echo "Access token: " . $responseObj->access_token;
+}
+
+
+
 
 switch($option)
 {
@@ -75,7 +110,7 @@ switch($option)
 		break;
 	
 
-	case "6" : $passUrl="http://localhost/well/api/well.php/users/forgotpass";
+	case "6" : $passUrl="http://localhost/well/api/well.php/logins/forgotpass";
 				$data=array(
 					'forgotinfo'=>array(
 						'email'=>'somnathk.crescente@gmail.com',
@@ -84,11 +119,11 @@ switch($option)
 					);
 		break;
 
-	case "7" : $passUrl="http://localhost/well/api/well.php/users/resetpass";
+	case "7" : $passUrl="http://localhost/well/api/well.php/logins/resetpass";
 				$data=array(
 					'resetinfo'=>array(
 						'newpassword'=>'password123',
-                        'resettoken'=>'bbb2aa8b2b69e893e2c3a9df414a2fcc'
+                        'resettoken'=>'987a9ea2ec7b6c4bc1352c377642ec3c'
                         )
 					);
 		break;     
@@ -148,11 +183,13 @@ switch($option)
                         'user_id'=>'11', // autofill userid in textbox
                         'as_name'=>'first demo assesment',
                         'as_date'=>'26-07-2016',
+                        'as_time'=>'12:12:00',
+                        'ampm'=>'PM',
                         'agreement'=>'1', // 0 or 1 yes or no
                         'as_desc'=>'First Demo Assesment',
-                        'created_by'=>'11', // either by resident or staff member
+                        'created_by'=>'16', // staff id 
                         'created_time'=>date('Y-m-d H:i:s'), // current time
-                        'status'=>'1'
+                        'status'=>'1' //1 if added by staff / 2 if added by resident
                         )
 					);
 		break;
@@ -189,13 +226,34 @@ switch($option)
                         )
 					);
 		break;
-   case "16" : $passUrl="http://localhost/well/api/well.php/assesment/singleasmt"; // display users assesment list by userid
+   case "16" : $passUrl="http://localhost/well/api/well.php/assesment/singleasmt"; // display Single assesment by id
 				$data=array(
 					'singleasmtinfo'=>array(
 						'id'=>'994'
                         )
 					);
 		break;
+   case "17" : $passUrl="http://localhost/well/api/well.php/assesment/asmtapprove"; // notification for assesment approve to user
+				$data=array(
+					'approveinfo'=>array(
+						'id'=>'6',  // assesment id created by resident
+                        'status'=>'1' // 1 for accept and 0 for reject
+                        )
+					);
+		break;
+  //email notification system
+  case "26" : $passUrl="http://localhost/well/api/well.php/notification/notification"; // notifications between users
+				$data=array(
+					'notifyinfo'=>array(
+						'sender'=>'16', // user_id of logged in user
+                        'receiver'=>'11', // if staff login then userid of resident  * if resident login then userid of staff * if Admin login then userid of staff
+                        'subject'=>'Subject for mail',
+                        'message'=>'Message',
+                        'attachment'=>'http://localhost/well/img/a0.jpg' 
+                        )
+					);
+		break;
+        
 }//switch
 
 $passedObject = json_encode($data);

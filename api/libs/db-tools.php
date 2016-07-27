@@ -71,7 +71,7 @@ function db_fetch_ll($query)
 
 	}
 
-
+    
 	return $rows;
 
 }	
@@ -140,7 +140,7 @@ function db_add ($table, $fields)
 			
 }
 
-function send_mail($from_email,$from_name,$to,$subject,$message)
+function send_mail($from_email,$from_name,$to,$subject,$message,$attachment=null)
 {
     $mail = new PHPMailer;
     
@@ -165,6 +165,8 @@ function send_mail($from_email,$from_name,$to,$subject,$message)
     
     $mail->Subject = $subject;
     $mail->Body    = $bodyContent;
+    
+    $attachment!=null?$mail->addAttachment($attachment):'';
     
     if(!$mail->send()) 
     {
